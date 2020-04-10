@@ -22,8 +22,12 @@ class Signal():
         self.length = length
         self.default_value = value
 
+    def get(self):
+        return (self.name.name, self.pos, self.length, hex(self.default_value))
+
 class Frame(object):
-    def __init__(self, name, frame_type, platform, signall_list, dlc):
+    def __init__(self,id, name, frame_type, platform, signall_list, dlc):
+        self.id = id
         self.name = name
         self.frame_type = frame_type
         self.platform = platform
@@ -90,7 +94,12 @@ ctr_nwm_nfc = [
     ]
 
 #print(ctr_nwm_nfc[0].pos)
-nfc = Frame('nfc_frame', 'rx', 'sp2015', ctr_nwm_nfc, 8)
+nfc = Frame(1888,'nfc_frame', 'rx', 'sp2015', ctr_nwm_nfc, 8)
+
+
+Frames = {nfc.name : nfc}
+
+
 print(nfc.payload)
 
 

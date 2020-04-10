@@ -1,4 +1,5 @@
 from tkinter import *
+from tkinter.ttk import *
 from template import *
 import serial
 import time
@@ -6,6 +7,7 @@ import _thread
 #from pycan.drivers.canusb import CANUSB
 from common import CANMessage
 from usb import CANUSB
+from frames.frames import *
 
 VERSION = '2.30.0'
 
@@ -114,9 +116,125 @@ class Application(object):
         self.msg = message
         self.msg.btn_send.config(command = self.send)
         self.log = logs
-
-
         self.tid = _thread.start_new_thread(self.__process_inbound_queue, ())
+        self.msg.txt_messages.bind('<<ListboxSelect>>', self.on_select) 
+
+        self.msg.listBox.bind('<Double-1>', self.set_cell_value)
+
+        
+        for f in Frames.values():
+            self.msg.txt_messages.insert(END,(f.name))    
+            #print(f.name)
+            #ramka = Frames[f.name]
+            #print (ramka.name)
+            #print (Frames[f.name])
+
+    def set_cell_value(self, event):
+
+        '''
+        print("sell")
+    
+        entryIndex = self.msg.listBox.focus()
+        if '' == entryIndex: return
+
+        win = Toplevel()
+        win.title("Edit Entry")
+        win.attributes("-toolwindow", True)
+        for child in self.msg.listBox.get_children():
+            if child == entryIndex:
+                values = self.msg.listBox.item(child)["values"]
+                break
+
+        col1Lbl = Label(win, text = "Value 1: ")
+        col1Ent = Entry(win)
+        col1Ent.insert(0, values[0]) # Default is column 1's current value
+        col1Lbl.grid(row = 0, column = 0)
+        col1Ent.grid(row = 0, column = 1)
+
+        col2Lbl = Label(win, text = "Value 2: ")
+        col2Ent = Entry(win)
+        col2Ent.insert(0, values[1]) # Default is column 2's current value
+        col2Lbl.grid(row = 0, column = 2)
+        col2Ent.grid(row = 0, column = 3)
+
+        col3Lbl = Label(win, text = "Value 3: ")
+        col3Ent = Entry(win)
+        col3Ent.insert(0, values[2]) # Default is column 3's current value
+        col3Lbl.grid(row = 0, column = 4)
+        col3Ent.grid(row = 0, column = 5)
+
+        def UpdateThenDestroy():
+            if self.ConfirmEntry(self.msg.listBox, col1Ent.get(), col2Ent.get(), col3Ent.get()):
+                win.destroy()
+
+        okButt = Button(win, text = "Ok")
+        okButt.bind("<Button-1>", lambda e: UpdateThenDestroy())
+        okButt.grid(row = 1, column = 4)
+
+        canButt = Button(win, text = "Cancel")
+        canButt.bind("<Button-1>", lambda c: win.destroy())
+        canButt.grid(row = 1, column = 5)
+
+
+    def ConfirmEntry(self, treeView, entry1, entry2, entry3):
+        currInd = self.msg.listBox.index(treeView.focus())
+        self.DeleteCurrentEntry(treeView)
+        self.msg.listBox.insert('', currInd, values = (entry1, entry2, entry3))
+
+        return True
+
+    def DeleteCurrentEntry(self, treeView):
+        curr = self.msg.listBox.focus()
+
+        if '' == curr: return
+
+        self.msg.listBox.delete(curr)
+
+        '''
+
+        item = self.msg.listBox.focus()
+        #print(item.value[3])
+        #print(self.msg.listBox.item(item, "values")[3])
+
+       
+        rowid = self.msg.listBox.identify_row(event.y)
+        #print(rowid)
+        column = self.msg.listBox.identify_column(event.x)
+        #print(column)
+        x,y,width,height = self.msg.listBox.bbox(rowid, column)
+
+        print(x)
+        print(y)
+        print(width)  
+        print(height)
+        value = self.msg.listBox.set(rowid, column)
+        print(value)
+
+        
+        pady = 0       
+        text = self.msg.listBox.item(rowid, 'text')
+        print(text)
+       # print(text)
+        #self.entryPopup = EntryPopup(self.msg.listBox, rowid, self.msg.listBox.item(item, "values")[3])
+        #self.entryPopup.place( x=0, y=y+pady, anchor=W, relwidth=1)
+
+
+    def on_select(self, event):
+        w = event.widget
+        index = int(w.curselection()[0])
+        value = w.get(index)
+        print (index)
+
+        for i in self.msg.listBox.get_children():
+            self.msg.listBox.delete(i)
+
+
+        frame = Frames[value]
+        for signal in Frames[value].signall_list:
+            self.msg.listBox.insert('', 'end',values=(signal.get()))
+        
+        print(frame.id)
+
 
     def send(self):
         self.serialPort.write(b't1008FFAAFFAAFFAAFFAA' + CR)
@@ -335,3 +453,34 @@ class Application(object):
         except SymException as e:
             self.cnt.txt_connect.insert(END,str(e.args) + "\n")
 
+
+
+class EntryPopup(Entry):
+
+    def __init__(self, parent, iid, text, **kw):
+        ''' If relwidth is set, then width is ignored '''
+        super().__init__(parent, **kw)
+        self.tv = parent
+        self.iid = iid
+
+        self.insert(0, text) 
+        # self['state'] = 'readonly'
+        # self['readonlybackground'] = 'white'
+        # self['selectbackground'] = '#1BA1E2'
+        self['exportselection'] = False
+
+        self.focus_force()
+        self.bind("<Return>", self.on_return)
+        self.bind("<Control-a>", self.select_all)
+        self.bind("<Escape>", lambda *ignore: self.destroy())
+
+    def on_return(self, event):
+        self.tv.item(self.iid, text=self.get())
+        self.destroy()
+
+    def select_all(self, *ignore):
+        ''' Set selection on the whole text '''
+        self.selection_range(0, 'end')
+
+        # returns 'break' to interrupt default key-bindings
+        return 'break'

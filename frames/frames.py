@@ -36,10 +36,6 @@ class Frame(object):
         for l in self.signall_list:
             self.SetSignall(l.name, l.default_value)
 
-
-
-        
-
     def SetSignall(self,Signal, value):
         p = 0
         va = Signal.value
@@ -93,18 +89,12 @@ ctr_nwm_nfc = [
         Signal(ENUM_CTR_NWM_NFC.CTR_NWM_NFC_RST_FBD, 8, 4, 0x0d),
     ]
 
-#print(ctr_nwm_nfc[0].pos)
 nfc = Frame(1888,'nfc_frame', 'rx', 'sp2015', ctr_nwm_nfc, 8)
-
 
 Frames = {nfc.name : nfc}
 
-
-print(nfc.payload)
-
-
 #print(ENUM_CTR_NWM_NFC.CTR_NWM_NFC_POWM.name.value)
-print(nfc.ReadSignall(ENUM_CTR_NWM_NFC.CTR_NWM_NFC_POWM))
+#print(nfc.ReadSignall(ENUM_CTR_NWM_NFC.CTR_NWM_NFC_POWM))
 
-nfc.SetSignall(ENUM_CTR_NWM_NFC.CTR_NWM_NFC_POWM,12)
-print(nfc.payload)
+#nfc.SetSignall(ENUM_CTR_NWM_NFC.CTR_NWM_NFC_POWM,12)
+#print(nfc.payload)

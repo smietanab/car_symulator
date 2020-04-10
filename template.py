@@ -50,8 +50,8 @@ class Messages(LabelFrame):
 
     def create_widgets(self):
         
-        self.txt_messages = Text(self, wrap = WORD, width = 50, height = 10)
-        self.txt_messages.grid(row = 0, column = 0, columnspan = 3, rowspan = 3, sticky = "nsew")
+        self.txt_messages = Listbox(self, width = 70, height = 10)
+        self.txt_messages.grid(row = 0, column = 0, columnspan = 3, sticky = "nsew")
 
         self.btn_send = Button(self,text = "Send")
         self.btn_send.grid(column = 0, row = 4, columnspan = 3, sticky = "nsew")

@@ -34,7 +34,9 @@ class Connection(LabelFrame):
         self.btn_refsresh.grid(column = 2, row = 0, sticky = "nsew")   
 
         self.btn_connect = Button(self,text = "Connect")
-        self.btn_connect.grid(column = 0, row = 1, columnspan = 3, sticky = "nsew")  
+        self.btn_connect.grid(column = 0, row = 1, columnspan = 2, sticky = "nsew")  
+        self.btn_disconnect = Button(self,text = "Disconnect", state=DISABLED)
+        self.btn_disconnect.grid(column = 2, row = 1, sticky = "nsew")  
 
         self.txt_connect = scrolledtext.ScrolledText(self, wrap = WORD, width = 50, height = 10)
         self.txt_connect.grid(row = 3, column = 0, columnspan = 3, rowspan = 3, sticky = "nsew")
@@ -75,12 +77,12 @@ class Log(LabelFrame):
 
         #self.txt_messages = Text(self, wrap = WORD, height = 50)
         #self.txt_messages.grid(row = 0, column = 0, columnspan = 3, rowspan = 3, sticky = "nsew")
-        self.cols = ('Time', 'Type', 'ID', 'DLC', 'Payload')
+        self.cols = ('Name','Time', 'Type', 'ID', 'DLC', 'Payload')
         self.listBox = Treeview(self, height = 31, columns=self.cols, show='headings')
         
         for col in self.cols:
             self.listBox.heading(col, text=col)
-            self.listBox.column(col, minwidth=100, width = 200)
+            self.listBox.column(col, minwidth=50, width = 100)
         self.listBox.grid(row=0, column=0, columnspan = 3, sticky = "nsew")
 
 

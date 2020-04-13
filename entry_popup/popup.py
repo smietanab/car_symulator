@@ -20,6 +20,9 @@ class EntryPopup(Entry):
     def on_return(self, event):
 
         self.frame.signall_list[self.signal_nr].default_value = int(self.get(),0)
+        self.frame.SetSignall(self.frame.signall_list[self.signal_nr].name, self.frame.signall_list[self.signal_nr].default_value)
+        
+        
         item = self.tv.focus()
         self.tv.delete(item)
         self.tv.insert('', self.signal_nr, values = (self.frame.signall_list[self.signal_nr].get()))

@@ -6,8 +6,8 @@ import time
 import _thread
 #from pycan.drivers.canusb import CANUSB
 from common import CANMessage
-from usb import CANUSB
 from frames.frames import *
+from frames.SP_2015 import *
 from entry_popup.popup import *
 
 CR = b'\x0d'
@@ -20,6 +20,38 @@ CMD_OPEN = b'1O'
 CMD_CLOSE = b'1C'
 CMD_OK = b'1\r'
 CMD_ALREADY_OPENED = b'1E9\x07'
+CHANNEL_NUMBERS = b"0123456789ABD"
+STD_MSG_HEADERS = [b"t", b"T", b"q", b"Q"]
+REM_MSG_HEADERS = [b"r", b"R", b"p", b"P"]
+ERR_MSG_HEADERS = [b"e", b"E"]
+SET_MSG_HEADERS = [b"N", b"V", b"F"]
+ACK_MSG = [b"z", b"Z", CR]
+# 0-GPIO; 1..6-CAN; 7,8-LIN; 9-POT; A,B-ADC; D-UART
+CHANNEL_NUMBERS = b"0123456789ABD"
+S_CHANNELS = b"12345678D"
+HEX_CHARS = b"0123456789ABCDEF"
+# Type_Protocol 0 - 15
+Type_Raw = 0
+Type_ISO = 1
+Type_BAP = 2
+Type_UDS = 3
+Type_JRE = 4
+
+Type_Conf = 8
+Type_E2E = 9
+
+Type_ACK = 13
+Type_RTR = 14
+Type_SET = 15
+#    Reserved (5 to 14) for another protocols
+# ......
+# Type_Parameter
+Type_Tx = 16
+Type_Cyclic = 32
+Type_Ext = 64
+Type_Addr = 128
+Type_Error = 256
+
 
 class ComException(Exception):
     def __init__(self, message):
@@ -33,9 +65,11 @@ class Application(object):
     def __init__(self, connection, message, logs):
 
 
+        #self.serialPort = serial.Serial(port='COM4', baudrate=115200,timeout=0.1, writeTimeout=5)
         self.is_CANopened = False
         self.cnt = connection
         self.cnt.btn_connect.config(command = self.connect_to_com)     
+        self.cnt.btn_disconnect.config(command = self.disconnect_to_com)     
         self.msg = message
         self.msg.btn_send.config(command = self.send)
         self.log = logs
@@ -53,11 +87,8 @@ class Application(object):
         rowid = self.msg.listBox.identify_row(event.y)
         column = self.msg.listBox.identify_column(event.x)
         x,y,width,height = self.msg.listBox.bbox(rowid, column)
-        value = self.msg.listBox.set(rowid, column)
-        pady = 0       
-        text = self.msg.listBox.item(rowid, 'values')[3]
         self.entryPopup = EntryPopup(self.msg.listBox, self.msg.listBox.item(item, "values")[3],  self.actual_frame, self.msg.listBox.index(item))
-        self.entryPopup.place( x=0, y=y+pady, anchor='w', relwidth=1)
+        self.entryPopup.place( x=0, y=y, anchor='w', relwidth=1)
 
     def on_select(self, event):
         w = event.widget
@@ -73,16 +104,15 @@ class Application(object):
             self.msg.listBox.insert('', 'end',values=(signal.get()))
         
     def send(self):
-        self.serialPort.write(b't1008FFAAFFAAFFAAFFAA' + CR)
-
-    def _thread_function(self):
-        while(1):
-            if(self.is_CANopened):
-
-                if(self.serialPort.inWaiting() != 0):
-                    self.cnt.txt_connect.insert(END,self.serialPort.read(31))
+        
+        payload = "".join("%02x" % b for b in self.actual_frame.payload)
+        id = str("{:x}".format(self.actual_frame.id))
+        sting_to_send = ("1t"  + str(id) +str(self.actual_frame.dlc) + str(payload).upper())
+        byte_to_send = sting_to_send.encode('utf-8')
+        self.serialPort.write(byte_to_send + CR)
 
     def __process_inbound_queue(self):
+        
         inWaiting = 0
         ile, ileT, ileE, ix = 0, 0, 0, 0
         self.rxMsg = b''
@@ -108,10 +138,9 @@ class Application(object):
                 else:
 
                     if(self.serialPort.inWaiting() != 0):
-                       self.rxMsg += self.serialPort.read(31)  # Max len of frame = 31
-                       print(self.rxMsg)
-                       print("line 156")
-
+                        self.rxMsg += self.serialPort.read(31)  # Max len of frame = 31
+                        print(self.rxMsg)
+                        print("line 156")
 
     def __handleInMsg(self, ix):
 
@@ -208,9 +237,24 @@ class Application(object):
 #('Time','CAN', 'Type', 'ID', 'DLC', 'Payload')
 
             if(new_msg.id != 0):
-                self.log.listBox.insert('', 'end',values=(new_msg.get() ))
-            print( new_msg )
-            print( "line 249 " )
+                
+                
+                for fr in Frames.values():
+                    print(fr)
+                    if fr.id == new_msg.id:
+                        
+                        t = (fr.name,) + new_msg.get()
+                        
+                        self.log.listBox.insert('', 'end',values=(t ))
+                        return
+                t = ('unknown',) + new_msg.get()
+                self.log.listBox.insert('', 'end',values=(t))
+        
+                
+                
+                #self.log.listBox.insert('', 'end',values=(new_msg.get() ))
+            #print( new_msg )
+            #print( "line 249 " )
 
         except IndexError as e:
             print( __name__ + " Bad message " + str(ch) + msg.decode() )
@@ -237,8 +281,13 @@ class Application(object):
             # Chuck malformed messages
         return
 
+    def disconnect_to_com(self):
+        self.cnt.btn_connect.configure(state=NORMAL)
+        self.cnt.btn_disconnect.configure(state=DISABLED)
+
     def connect_to_com(self):
         try:
+
 #Get COM PORTS
             self.com = self.cnt.comboBox_comlist.get()
             if self.com == "":
@@ -271,10 +320,11 @@ class Application(object):
                 print(value)
             else:
                 raise SymException("Can't open CAN1 port, please restart device ")
-
-
+            
             self.is_CANopened = True
 
+            self.cnt.btn_connect.configure(state=DISABLED)
+            self.cnt.btn_disconnect.configure(state=NORMAL)
 
         except ComException as e:
             self.cnt.txt_connect.insert(END,str(e.args) + "\n")
